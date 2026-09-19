@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────
     logger.info("EcoRoute starting up...")
-    await neo4j_client.connect()
-    await bootstrap_schema()
-
-    # Seed Delhi graph if empty
-    await _seed_if_empty()
+    try:
+        await neo4j_client.connect()
+        await bootstrap_schema()
+        await _seed_if_empty()
+    except Exception as e:
+        logger.warning("Startup Neo4j initialization warning: %s", e)
 
     # Warm the Tavily news cache on startup
     from routes.news_api import refresh_news_cache
@@ -41,7 +42,10 @@ async def lifespan(app: FastAPI):
     yield
     # ── Shutdown ─────────────────────────────────────────────
     scheduler.shutdown(wait=False)
-    await neo4j_client.close()
+    try:
+        await neo4j_client.close()
+    except Exception:
+        pass
     logger.info("EcoRoute shut down cleanly")
 
 

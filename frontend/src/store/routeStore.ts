@@ -60,17 +60,72 @@ const INITIAL_EDGES: GraphEdge[] = [
   { from_node: 'Rohini', to_node: 'Rohini Sector 18 Delivery', distance: 1.2 },
 ]
 
+const INITIAL_ROUTE: RouteResult = {
+  status: 'ok',
+  total_km: 14.9,
+  hops: 4,
+  waypoints: [
+    { name: 'Okhla Industrial Estate', lat: 28.5398, lon: 77.2706, aqi: 0, category: 'Warehouse', hex: '#38BDF8', type: 'warehouse' },
+    { name: 'Okhla Phase 2', lat: 28.5280, lon: 77.2736, aqi: 187, category: 'Moderate', hex: '#FFFF00', type: 'neighborhood' },
+    { name: 'Nehru Nagar', lat: 28.5673, lon: 77.2536, aqi: 220, category: 'Poor', hex: '#FF9900', type: 'neighborhood' },
+    { name: 'Mandir Marg', lat: 28.6430, lon: 77.2021, aqi: 178, category: 'Moderate', hex: '#FFFF00', type: 'neighborhood' },
+    { name: 'Connaught Place Delivery', lat: 28.6295, lon: 77.2205, aqi: 0, category: 'Customer', hex: '#F43F5E', type: 'customer' },
+  ],
+  alternative_waypoints: [
+    { name: 'Okhla Industrial Estate', lat: 28.5398, lon: 77.2706, aqi: 0, category: 'Warehouse', hex: '#38BDF8', type: 'warehouse' },
+    { name: 'Okhla Phase 2', lat: 28.5280, lon: 77.2736, aqi: 187, category: 'Moderate', hex: '#FFFF00', type: 'neighborhood' },
+    { name: 'ITO', lat: 28.6328, lon: 77.2402, aqi: 312, category: 'Very Poor', hex: '#FF0000', type: 'neighborhood' },
+    { name: 'Connaught Place', lat: 28.6329, lon: 77.2195, aqi: 195, category: 'Moderate', hex: '#FFFF00', type: 'neighborhood' },
+    { name: 'Connaught Place Delivery', lat: 28.6295, lon: 77.2205, aqi: 0, category: 'Customer', hex: '#F43F5E', type: 'customer' },
+  ],
+  alternative_total_km: 17.2,
+  alternative_hops: 4,
+  avoided: ['Anand Vihar', 'Jahangirpuri', 'Wazirpur'],
+  high_risk_zones: ['ITO'],
+}
+
+interface RouteStore {
+  route: RouteResult | null
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  liveConnected: boolean
+  selectedCustomer: string
+  events: EventLogEntry[]
+  setRoute: (r: RouteResult) => void
+  setNodes: (n: GraphNode[]) => void
+  setEdges: (e: GraphEdge[]) => void
+  setLiveConnected: (v: boolean) => void
+  setSelectedCustomer: (c: string) => void
+  appendEvent: (e: Omit<EventLogEntry, 'id'>) => void
+  updateNodeAqi: (name: string, aqi: number, category: string, hex: string) => void
+}
+
 export const useRouteStore = create<RouteStore>((set) => ({
-  route: null,
+  route: INITIAL_ROUTE,
   nodes: INITIAL_NODES,
   edges: INITIAL_EDGES,
   liveConnected: false,
-  events: [],
+  selectedCustomer: 'Connaught Place Delivery',
+  events: [
+    {
+      id: 'init-1',
+      type: 'system',
+      time: new Date().toISOString(),
+      detail: 'EcoRoute engine initialized with Delhi NCR topological graph',
+    },
+    {
+      id: 'init-2',
+      type: 'sync',
+      time: new Date().toISOString(),
+      detail: 'CPCB DPCC real-time sensor network connected',
+    },
+  ],
 
   setRoute: (r) => set({ route: r }),
   setNodes: (n) => set({ nodes: n }),
   setEdges: (e) => set({ edges: e }),
   setLiveConnected: (v) => set({ liveConnected: v }),
+  setSelectedCustomer: (c) => set({ selectedCustomer: c }),
 
   appendEvent: (e) =>
     set((state) => ({

@@ -179,6 +179,17 @@ async def get_all_nodes() -> list[dict]:
         return []
 
 
+async def get_all_edges() -> list[dict]:
+    """Return all road edges for map rendering."""
+    try:
+        async with neo4j_client.session() as session:
+            res = await session.run(ALL_EDGES_QUERY)
+            return await res.data()
+    except Exception as e:
+        logger.error("Failed to fetch edges: %s", e)
+        return []
+
+
 async def get_graph_data() -> dict:
     """Return all nodes and edges for map rendering."""
     try:

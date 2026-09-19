@@ -41,6 +41,7 @@ export interface RouteResult {
 }
 
 export interface EventLogEntry {
+  id?: string
   type: 'spike' | 'sync' | 'reset' | 'info' | 'system'
   time: string
   detail: string

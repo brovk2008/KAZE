@@ -154,10 +154,11 @@ export function MapPanel() {
         className="w-full h-full"
         zoomControl={false}
       >
-        {/* CartoDB Dark Matter Tiles for Cybernetic Obsidian Theme */}
+        {/* Esri World Dark Gray Base — Ultra clean, crisp, 100% watermark-free */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; Esri &mdash; Esri, OpenStreetMap contributors'
+          maxZoom={16}
         />
 
         {/* Full graph topology edges (subtle dark vectors) */}
