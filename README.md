@@ -78,8 +78,8 @@
 | **Neo4j AuraDB** | Graph DB — nodes, roads, AQI state | ✅ Connected |
 | **CPCB / data.gov.in** | Live AQI readings for Delhi NCR | ✅ Connected |
 | **Tavily** | AI news + spike context search | ✅ Connected |
-| **Render** | Backend hosting (FastAPI) | ✅ Configured via `render.yaml` |
-| **Vercel** | Frontend hosting (React) | ✅ Deploy-ready (`npm run build`) |
+| **Render** | Backend hosting (FastAPI) | ✅ Live — `https://ecoroute-api-fg15.onrender.com` |
+| **Vercel** | Frontend hosting (React) | ✅ Live — auto-deployed on push |
 | **WebSocket** | Real-time route push to UI | ✅ Wired end-to-end |
 
 ---
