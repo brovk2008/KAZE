@@ -1,4 +1,9 @@
 {
-    "framework": "vite",
-    "rootDirectory": "frontend"
+  "framework": "vite",
+  "rootDirectory": "frontend",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
