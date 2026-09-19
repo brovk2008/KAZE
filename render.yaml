@@ -9,18 +9,18 @@ services:
     healthCheckPath: /health
     envVars:
       - key: NEO4J_URI
-        value: neo4j+s://96f11763.databases.neo4j.io
+        sync: false
       - key: NEO4J_USER
-        value: 96f11763
-      - key: NEO4J_DATABASE
-        value: 96f11763
+        sync: false
       - key: NEO4J_PASSWORD
         sync: false
+      - key: NEO4J_DATABASE
+        sync: false
       - key: CPCB_API_KEY
-        value: 579b464db66ec23bdd00000129ca663565f3487e68329466cdd8da2c
+        sync: false
       - key: TAVILY_API_KEY
-        value: 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
+        sync: false
       - key: PYTHON_VERSION
         value: "3.11.9"
       - key: CORS_ORIGINS
-        value: "http://localhost:5173,https://ecoroute.vercel.app"
+        value: "http://localhost:5173,https://kaze.vercel.app"
