@@ -1,5 +1,6 @@
 import { useRouteStore } from '../store/routeStore'
-import { Radio, RefreshCw, Cpu } from 'lucide-react'
+import { Radio, RefreshCw } from 'lucide-react'
+import logoImg from '../assets/Logo.png'
 
 interface Props {
   lastSync?: string
@@ -11,14 +12,18 @@ export function Header({ lastSync }: Props) {
   return (
     <header className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] bg-[#0a0b0e]/90 backdrop-blur-md z-10 relative flex-shrink-0">
       {/* Brand */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/10 border border-cyan-500/30 shadow-lg">
-          <Cpu className="w-6 h-6 text-cyan-400" />
+      <div className="flex items-center gap-3.5">
+        <div className="flex items-center justify-center p-1 rounded-xl bg-white/[0.04] border border-cyan-500/30 shadow-lg shadow-cyan-500/10 overflow-hidden">
+          <img
+            src={logoImg}
+            alt="EcoRoute KAZE"
+            className="h-8 w-auto object-contain rounded-lg"
+          />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] tracking-[0.4em] text-cyan-400 font-semibold uppercase">
-              PS-1A · NEO4J AURA
+            <span className="font-mono text-[9px] tracking-[0.35em] text-cyan-400 font-semibold uppercase">
+              NEO4J AURA · REAL-TIME ECO-ROUTING
             </span>
           </div>
           <h1 className="font-serif italic text-2xl text-white font-light tracking-wide leading-none mt-0.5">

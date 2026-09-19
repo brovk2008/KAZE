@@ -149,7 +149,7 @@ body::before {
   font-family: 'Geist Mono', monospace !important;
 }
 .leaflet-tile {
-  filter: brightness(0.25) saturate(0.2) !important;
+  filter: brightness(0.9) contrast(1.1) saturate(0.7) !important;
 }
 .leaflet-control-attribution {
   background: rgba(8,8,8,0.85) !important;
@@ -190,7 +190,45 @@ body::before {
 }
 .blink { animation: blink 1.5s ease-in-out infinite; }
 
-/* ── Route line animation ────────────────────────────────── */
-@keyframes dash {
-  to { stroke-dashoffset: -20; }
+/* ── Real Google Maps animated flowing polyline ──────────── */
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 50;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animated-flowing-route {
+  stroke-dasharray: 8, 12 !important;
+  animation: dash-flow 1.2s linear infinite !important;
+}
+
+.animated-alt-route {
+  stroke-dasharray: 6, 8 !important;
+  animation: dash-flow 1.8s linear infinite !important;
+}
+
+/* ── Animated Delivery Vehicle Beacon ────────────────────── */
+.courier-marker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s linear;
+}
+
+.courier-pulse {
+  animation: courierAura 1.5s ease-in-out infinite;
+}
+
+@keyframes courierAura {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 1));
+  }
 }
