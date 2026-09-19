@@ -2,18 +2,19 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Polyline, Tooltip } from 
 import 'leaflet/dist/leaflet.css'
 import { useRouteStore } from '../store/routeStore'
 import type { GraphNode } from '../types'
+import { Package, Target, AlertTriangle, ShieldCheck } from 'lucide-react'
 
 const DELHI_CENTER: [number, number] = [28.6139, 77.2090]
 
 function aqiCircleRadius(aqi: number): number {
-  if (aqi > 400) return 18
-  if (aqi > 300) return 14
-  if (aqi > 200) return 11
-  return 9
+  if (aqi > 400) return 16
+  if (aqi > 300) return 13
+  if (aqi > 200) return 10
+  return 8
 }
 
 function aqiBorderWeight(aqi: number): number {
-  return aqi > 400 ? 3 : 1
+  return aqi > 400 ? 3 : 1.5
 }
 
 interface NodeCircleProps {
@@ -23,63 +24,110 @@ interface NodeCircleProps {
 }
 
 function NodeCircle({ node, isOnRoute, isAvoided }: NodeCircleProps) {
-  const radius = node.type === 'warehouse' || node.type === 'customer'
-    ? 10
-    : aqiCircleRadius(node.aqi)
+  const isSpecial = node.type === 'warehouse' || node.type === 'customer'
+  const isSevere = node.aqi > 400
+
+  const radius = isSpecial ? 12 : aqiCircleRadius(node.aqi)
 
   const color = node.type === 'warehouse'
-    ? '#FFFFFF'
+    ? '#38BDF8' // Cyan
     : node.type === 'customer'
-      ? '#FFFFFF'
+      ? '#F43F5E' // Rose
       : node.hex || '#94A3B8'
 
-  const opacity = isAvoided ? 0.9 : isOnRoute ? 1.0 : 0.55
+  const opacity = isAvoided ? 0.95 : isOnRoute ? 1.0 : 0.65
 
   return (
-    <CircleMarker
-      center={[node.lat, node.lon]}
-      radius={radius}
-      pathOptions={{
-        color,
-        fillColor: color,
-        fillOpacity: opacity,
-        weight: aqiBorderWeight(node.aqi),
-        opacity: 1,
-      }}
-    >
-      <Popup>
-        <div style={{ minWidth: 160 }}>
-          <p style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#94A3B8', marginBottom: 4 }}>
-            {node.type}
-          </p>
-          <p style={{ fontFamily: 'DM Serif Display, serif', fontStyle: 'italic', fontSize: 16, color: '#fff', marginBottom: 6 }}>
-            {node.name}
-          </p>
-          {node.type === 'neighborhood' && (
-            <>
-              <p style={{ fontFamily: 'Geist Mono, monospace', fontSize: 12 }}>
-                AQI: <strong style={{ color: node.hex }}>{node.aqi}</strong>
-              </p>
-              <p style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11, color: node.hex, marginTop: 2 }}>
-                {node.category}
-              </p>
-              {node.aqi > 400 && (
-                <p style={{ fontFamily: 'Geist Mono, monospace', fontSize: 10, color: '#FF4444', marginTop: 6, letterSpacing: '0.1em' }}>
-                  ⚠ ROUTE AVOIDS THIS ZONE
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      </Popup>
-      {(node.type === 'warehouse' || node.type === 'customer') && (
-        <Tooltip permanent direction="top" offset={[0, -8]}>
-          <span style={{ fontFamily: 'Geist Mono, monospace', fontSize: 9, letterSpacing: '0.2em' }}>
-            {node.type === 'warehouse' ? '📦 WAREHOUSE' : '🎯 DELIVERY'}
-          </span>
-        </Tooltip>
+    <>
+      {/* Outer Pulse Ring for Severe AQI > 400 */}
+      {isSevere && (
+        <CircleMarker
+          center={[node.lat, node.lon]}
+          radius={26}
+          pathOptions={{
+            color: '#800000',
+            fillColor: '#FF0000',
+            fillOpacity: 0.25,
+            weight: 1,
+            dashArray: '3,4',
+          }}
+        />
       )}
-    </CircleMarker>
+
+      {/* Main Node Circle */}
+      <CircleMarker
+        center={[node.lat, node.lon]}
+        radius={radius}
+        pathOptions={{
+          color: isSevere ? '#FF0000' : color,
+          fillColor: color,
+          fillOpacity: opacity,
+          weight: aqiBorderWeight(node.aqi),
+          opacity: 1,
+        }}
+      >
+        <Popup className="custom-leaflet-popup">
+          <div className="p-3 bg-[#0c0d12] text-white rounded-xl border border-white/10 shadow-2xl min-w-[200px]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[9px] font-mono tracking-widest text-white/40 uppercase">
+                {node.type}
+              </span>
+              {node.type === 'neighborhood' && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold"
+                  style={{ backgroundColor: `${node.hex}22`, color: node.hex }}
+                >
+                  {node.category}
+                </span>
+              )}
+            </div>
+
+            <h3 className="font-serif italic text-lg text-white mb-2 leading-tight">
+              {node.name}
+            </h3>
+
+            {node.type === 'neighborhood' && (
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-white/60">AQI Index:</span>
+                  <strong className="text-sm font-bold" style={{ color: node.hex }}>
+                    {node.aqi}
+                  </strong>
+                </div>
+
+                {isSevere ? (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-red-950/60 border border-red-500/30 text-red-400 text-[10px] font-mono mt-2">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>TRAVERSAL BLOCKED (AQI &gt; 400)</span>
+                  </div>
+                ) : isOnRoute ? (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono mt-2">
+                    <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>ON ACTIVE SAFE ROUTE</span>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </Popup>
+
+        {isSpecial && (
+          <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
+            <span className="font-mono text-[9px] font-bold tracking-wider px-2 py-0.5 rounded bg-black/80 text-white border border-white/20 flex items-center gap-1">
+              {node.type === 'warehouse' ? (
+                <>
+                  <Package className="w-3 h-3 text-cyan-400 inline" /> WAREHOUSE
+                </>
+              ) : (
+                <>
+                  <Target className="w-3 h-3 text-rose-400 inline" /> DELIVERY
+                </>
+              )}
+            </span>
+          </Tooltip>
+        )}
+      </CircleMarker>
+    </>
   )
 }
 
@@ -92,23 +140,24 @@ export function MapPanel() {
   // Build polyline from route waypoints
   const routeLatLngs: [number, number][] = (route?.waypoints ?? []).map((w) => [w.lat, w.lon])
 
-  // Build edge lines for the full graph (dimmed)
+  // Map nodes for lookup
   const nodeMap = new Map(nodes.map((n) => [n.name, n]))
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-[#080808]">
       <MapContainer
         center={DELHI_CENTER}
         zoom={11}
         className="w-full h-full"
         zoomControl={false}
       >
+        {/* CartoDB Dark Matter Tiles for Cybernetic Obsidian Theme */}
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
-        {/* Full graph edges (very dim) */}
+        {/* Full graph topology edges (subtle dark vectors) */}
         {edges.map((e) => {
           const a = nodeMap.get(e.from_node)
           const b = nodeMap.get(e.to_node)
@@ -117,25 +166,37 @@ export function MapPanel() {
             <Polyline
               key={`edge-${e.from_node}-${e.to_node}`}
               positions={[[a.lat, a.lon], [b.lat, b.lon]]}
-              pathOptions={{ color: 'rgba(255,255,255,0.06)', weight: 1, dashArray: '4,6' }}
+              pathOptions={{ color: 'rgba(255,255,255,0.08)', weight: 1.5, dashArray: '4,6' }}
             />
           )
         })}
 
-        {/* Active route polyline */}
+        {/* Glow backdrop for active route */}
         {routeLatLngs.length > 1 && (
           <Polyline
             positions={routeLatLngs}
             pathOptions={{
-              color: '#E2E8F0',
-              weight: 3,
-              opacity: 0.9,
-              dashArray: route?.status === 'no_safe_route' ? '6,6' : undefined,
+              color: route?.status === 'no_safe_route' ? '#EF4444' : '#38BDF8',
+              weight: 8,
+              opacity: 0.35,
             }}
           />
         )}
 
-        {/* All nodes */}
+        {/* Core active route line */}
+        {routeLatLngs.length > 1 && (
+          <Polyline
+            positions={routeLatLngs}
+            pathOptions={{
+              color: route?.status === 'no_safe_route' ? '#F87171' : '#F8FAFC',
+              weight: 3.5,
+              opacity: 0.95,
+              dashArray: route?.status === 'no_safe_route' ? '8,8' : undefined,
+            }}
+          />
+        )}
+
+        {/* All spatial nodes */}
         {nodes.map((node) => (
           <NodeCircle
             key={node.name}
@@ -146,13 +207,19 @@ export function MapPanel() {
         ))}
       </MapContainer>
 
-      {/* No-safe-route overlay */}
+      {/* No-safe-route alert overlay */}
       {route?.status === 'no_safe_route' && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] glass px-6 py-3 flex items-center gap-3">
-          <span className="text-red-500 text-xl">⚠</span>
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-red-500/40 shadow-2xl bg-black/80 backdrop-blur-md animate-pulse">
+          <div className="p-3 rounded-xl bg-red-500/20 text-red-400">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
           <div>
-            <p className="mono-label text-red-400">NO SAFE ROUTE</p>
-            <p className="text-xs text-white/60 mt-0.5">All paths blocked — manual dispatch required</p>
+            <p className="font-mono text-xs font-bold tracking-widest text-red-400 uppercase">
+              NO SAFE ROUTE FOUND
+            </p>
+            <p className="text-xs text-white/70 mt-0.5">
+              All physical pathways pass through Hazardous zones (AQI &gt; 400). Manual dispatch required.
+            </p>
           </div>
         </div>
       )}

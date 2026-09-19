@@ -2,6 +2,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { API } from '../api'
 import { useRouteStore } from '../store/routeStore'
+import { Zap, RotateCcw, Sparkles, Loader2 } from 'lucide-react'
 
 export function SimulationControl() {
   const { nodes, setRoute, appendEvent } = useRouteStore()
@@ -14,7 +15,10 @@ export function SimulationControl() {
   const neighborhoods = nodes.filter((n) => n.type === 'neighborhood')
 
   const triggerSpike = async () => {
-    if (!selected) return
+    if (!selected) {
+      toast.error('Select a neighborhood first')
+      return
+    }
     setLoading(true)
     setContext('')
     try {
@@ -32,18 +36,21 @@ export function SimulationControl() {
           time: new Date().toISOString(),
           detail: `🚨 Simulated: ${selected} → AQI ${spikeValue}`,
         })
-        // WebSocket will also broadcast — toast shown there
+        toast.success(`⚡ Spiked ${selected} to AQI ${spikeValue}`)
       } else {
         toast.error(data.error || 'Simulation failed')
       }
     } catch (e) {
-      toast.error('API error during simulation')
+      toast.error('API connection error during simulation')
     }
     setLoading(false)
   }
 
   const resetSpike = async () => {
-    if (!selected) return
+    if (!selected) {
+      toast.error('Select a neighborhood first')
+      return
+    }
     setResetting(true)
     setContext('')
     try {
@@ -55,7 +62,7 @@ export function SimulationControl() {
       const data = await res.json()
       if (data.success && data.route) {
         setRoute(data.route)
-        toast.success(`↩ ${selected} restored to live AQI`)
+        toast.success(`↩ Restored ${selected} to live CPCB data`)
       }
     } catch (e) {
       toast.error('Reset failed')
@@ -64,79 +71,99 @@ export function SimulationControl() {
   }
 
   return (
-    <div className="glass p-4 space-y-3">
+    <div className="glass p-4 rounded-2xl border border-red-500/20 bg-gradient-to-b from-red-950/20 to-black/40 space-y-3.5">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <span className="text-red-400">⚡</span>
-        <p className="mono-label text-red-400/80">Simulate AQI Spike</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-red-400">
+          <Zap className="w-4 h-4" />
+          <span className="font-mono text-[10px] font-bold tracking-widest uppercase">
+            SIMULATE AQI SPIKE
+          </span>
+        </div>
+        <span className="font-mono text-[8px] text-red-400/60 bg-red-950/60 px-2 py-0.5 rounded border border-red-500/30">
+          DEMO ENGINE
+        </span>
       </div>
 
-      {/* Node selector */}
+      {/* Select Neighborhood */}
       <select
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
-        className="w-full bg-transparent border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white/80 focus:outline-none focus:border-white/30 cursor-pointer"
-        style={{ fontFamily: 'Geist Mono, monospace', fontSize: 11 }}
+        className="w-full bg-[#08090d] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white/90 focus:outline-none focus:border-red-500/50 cursor-pointer"
       >
-        <option value="" style={{ background: '#080808' }}>— Select Neighbourhood —</option>
+        <option value="" style={{ background: '#080808' }}>— Select Target Neighborhood —</option>
         {neighborhoods.map((n) => (
           <option key={n.name} value={n.name} style={{ background: '#080808' }}>
-            {n.name} (AQI {n.aqi})
+            {n.name} (Current: AQI {n.aqi})
           </option>
         ))}
       </select>
 
-      {/* Spike value */}
+      {/* Quick Presets */}
+      <div className="space-y-1">
+        <span className="font-mono text-[8px] text-white/40 tracking-wider">HIGH RISK PRESETS:</span>
+        <div className="flex gap-1.5 flex-wrap">
+          {['Anand Vihar', 'Punjabi Bagh', 'Jahangirpuri'].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => {
+                setSelected(preset)
+                setSpikeValue(487)
+              }}
+              className="font-mono text-[9px] px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] text-white/70 border border-white/10 transition-all"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Spike Value Input */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <p className="mono-label text-[8px] mb-1">Spike Value</p>
+          <label className="font-mono text-[8px] text-white/40 block mb-1">TARGET AQI (50-999)</label>
           <input
             type="number"
             value={spikeValue}
             min={50}
             max={999}
             onChange={(e) => setSpikeValue(Number(e.target.value))}
-            className="w-full bg-transparent border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-white/30"
-            style={{ fontFamily: 'Geist Mono, monospace', fontSize: 13 }}
-          />
-        </div>
-        <div className="mt-5">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{
-              background: spikeValue > 400 ? '#800000'
-                : spikeValue > 300 ? '#FF0000'
-                : spikeValue > 200 ? '#FF9900'
-                : spikeValue > 100 ? '#FFFF00'
-                : '#00B050',
-            }}
+            className="w-full bg-[#08090d] border border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-white focus:outline-none focus:border-red-500/50"
           />
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="flex gap-2">
+      {/* Actions */}
+      <div className="grid grid-cols-2 gap-2 pt-1">
         <button
-          className="danger-btn flex-1 text-[9px]"
+          type="button"
           onClick={triggerSpike}
-          disabled={!selected || loading}
+          disabled={loading || !selected}
+          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-mono text-[10px] font-bold tracking-wider transition-all shadow-lg shadow-red-950/50"
         >
-          {loading ? '...' : '🚨 TRIGGER SPIKE'}
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+          TRIGGER SPIKE
         </button>
+
         <button
-          className="silver-btn text-[9px]"
+          type="button"
           onClick={resetSpike}
-          disabled={!selected || resetting}
+          disabled={resetting || !selected}
+          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/10 disabled:opacity-40 text-white/80 font-mono text-[10px] font-bold tracking-wider border border-white/10 transition-all"
         >
-          {resetting ? '...' : '↩ RESET'}
+          {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+          RESET DATA
         </button>
       </div>
 
-      {/* Tavily Context */}
+      {/* Tavily AI Context */}
       {context && (
-        <div className="border border-white/[0.06] rounded-lg p-3 mt-1">
-          <p className="mono-label text-[8px] text-white/40 mb-1">📰 TAVILY CONTEXT</p>
-          <p className="text-xs text-white/60 leading-relaxed">{context}</p>
+        <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30 text-xs font-mono space-y-1">
+          <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-[9px]">
+            <Sparkles className="w-3.5 h-3.5" /> AI SPIKE INTELLIGENCE (TAVILY)
+          </div>
+          <p className="text-white/70 leading-relaxed text-[11px]">{context}</p>
         </div>
       )}
     </div>
