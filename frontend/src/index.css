@@ -1,0 +1,196 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* ── Base Reset ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --obsidian: #080808;
+  --white: #ffffff;
+  --silver: #E2E8F0;
+  --silver-dim: #94A3B8;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.20);
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-bg-hover: rgba(255, 255, 255, 0.04);
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--obsidian);
+  color: var(--silver);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ── Noise Texture ───────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  opacity: 0.05;
+}
+
+/* ── Glass Card ──────────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.glass:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--border-hover);
+}
+
+/* ── Silver Gradient Text ────────────────────────────────── */
+.silver-text {
+  background: linear-gradient(135deg, #F8FAFC 0%, #94A3B8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Silver Button ───────────────────────────────────────── */
+.silver-btn {
+  background: linear-gradient(135deg, #F8FAFC 0%, #94A3B8 100%);
+  color: #080808;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.silver-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+.silver-btn:active {
+  transform: translateY(0);
+}
+
+.silver-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Danger Button ───────────────────────────────────────── */
+.danger-btn {
+  background: linear-gradient(135deg, #FF4444 0%, #CC0000 100%);
+  color: #fff;
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.danger-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+}
+
+.danger-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Mono Label ──────────────────────────────────────────── */
+.mono-label {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--silver-dim);
+}
+
+/* ── Serif Italic Headline ───────────────────────────────── */
+.serif-italic {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-style: italic;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* ── Leaflet overrides ───────────────────────────────────── */
+.leaflet-container {
+  background: #0d0d0d !important;
+  font-family: 'Geist Mono', monospace !important;
+}
+.leaflet-tile {
+  filter: brightness(0.25) saturate(0.2) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(8,8,8,0.85) !important;
+  color: rgba(255,255,255,0.3) !important;
+  font-size: 8px !important;
+}
+.leaflet-popup-content-wrapper {
+  background: rgba(8,8,8,0.95) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 12px !important;
+  color: #E2E8F0 !important;
+  backdrop-filter: blur(24px) !important;
+}
+.leaflet-popup-tip {
+  background: rgba(8,8,8,0.95) !important;
+}
+
+/* ── Entry animation ─────────────────────────────────────── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-up {
+  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── AQI Pulse ───────────────────────────────────────────── */
+@keyframes pulse-aqi {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.aqi-pulse { animation: pulse-aqi 2s ease-in-out infinite; }
+
+/* ── Blinking Live dot ───────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+.blink { animation: blink 1.5s ease-in-out infinite; }
+
+/* ── Route line animation ────────────────────────────────── */
+@keyframes dash {
+  to { stroke-dashoffset: -20; }
+}
