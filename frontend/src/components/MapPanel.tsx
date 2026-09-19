@@ -137,8 +137,11 @@ export function MapPanel() {
   const routeNames = new Set(route?.waypoints.map((w) => w.name) ?? [])
   const avoidedNames = new Set(route?.avoided ?? [])
 
-  // Build polyline from route waypoints
+  // Build polyline from primary route waypoints
   const routeLatLngs: [number, number][] = (route?.waypoints ?? []).map((w) => [w.lat, w.lon])
+
+  // Build polyline from alternative route waypoints if present
+  const altLatLngs: [number, number][] = (route?.alternative_waypoints ?? []).map((w) => [w.lat, w.lon])
 
   // Map nodes for lookup
   const nodeMap = new Map(nodes.map((n) => [n.name, n]))
@@ -171,19 +174,32 @@ export function MapPanel() {
           )
         })}
 
-        {/* Glow backdrop for active route */}
+        {/* Alternative secondary route polyline (dashed purple/violet) */}
+        {altLatLngs.length > 1 && (
+          <Polyline
+            positions={altLatLngs}
+            pathOptions={{
+              color: '#A855F7',
+              weight: 3,
+              opacity: 0.7,
+              dashArray: '6,6',
+            }}
+          />
+        )}
+
+        {/* Glow backdrop for primary active route */}
         {routeLatLngs.length > 1 && (
           <Polyline
             positions={routeLatLngs}
             pathOptions={{
               color: route?.status === 'no_safe_route' ? '#EF4444' : '#38BDF8',
-              weight: 8,
+              weight: 9,
               opacity: 0.35,
             }}
           />
         )}
 
-        {/* Core active route line */}
+        {/* Core primary active route line */}
         {routeLatLngs.length > 1 && (
           <Polyline
             positions={routeLatLngs}
@@ -206,6 +222,22 @@ export function MapPanel() {
           />
         ))}
       </MapContainer>
+
+      {/* Route Legend Indicator */}
+      <div className="absolute bottom-6 left-6 z-[1000] glass px-4 py-2.5 rounded-xl border border-white/10 bg-black/80 backdrop-blur-md flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-1 rounded bg-cyan-400 shadow-sm" />
+          <span className="font-mono text-[9px] text-white/80">PRIMARY SAFE PATH</span>
+        </div>
+        {altLatLngs.length > 1 && (
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-1 rounded bg-purple-400 border border-purple-400 border-dashed" />
+            <span className="font-mono text-[9px] text-purple-300">
+              ALT PATH ({route?.alternative_total_km} KM)
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* No-safe-route alert overlay */}
       {route?.status === 'no_safe_route' && (

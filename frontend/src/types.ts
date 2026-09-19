@@ -33,7 +33,17 @@ export interface RouteResult {
   total_km: number
   hops: number
   avoided: string[]
+  high_risk_zones?: string[]
+  alternative_waypoints?: Waypoint[]
+  alternative_total_km?: number
+  alternative_hops?: number
   message?: string
+}
+
+export interface EventLogEntry {
+  type: 'spike' | 'sync' | 'reset' | 'info' | 'system'
+  time: string
+  detail: string
 }
 
 export interface NewsArticle {
@@ -61,11 +71,4 @@ export interface WsMessage {
   restored_aqi?: number
   context?: string
   timestamp?: string
-}
-
-export interface EventLogEntry {
-  id: string
-  type: string
-  time: string
-  detail: string
 }

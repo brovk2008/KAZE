@@ -3,7 +3,7 @@ from database.neo4j_client import neo4j_client
 
 logger = logging.getLogger(__name__)
 
-SAFE_ROUTE_QUERY = """
+PRIMARY_ROUTE_QUERY = """
 MATCH (warehouse:Warehouse), (customer:Customer {name: $customer_name})
 MATCH p = shortestPath((warehouse)-[:ROAD*..15]-(customer))
 WHERE all(n IN nodes(p)
@@ -27,6 +27,29 @@ RETURN waypoints,
        total_km,
        length(p) AS hops,
        [x IN nodes(p) WHERE x:Neighborhood AND x.aqi > 300 | x.name] AS high_risk_zones
+ORDER BY total_km ASC
+LIMIT 1;
+"""
+
+ALT_ROUTE_QUERY = """
+MATCH (warehouse:Warehouse), (customer:Customer {name: $customer_name})
+MATCH p = (warehouse)-[:ROAD*..10]-(customer)
+WHERE all(n IN nodes(p) WHERE n.aqi <= 400 OR n:Warehouse OR n:Customer)
+  AND NOT [x IN nodes(p) | x.name] = $primary_names
+WITH p,
+     reduce(dist = 0, r IN relationships(p) | dist + r.distance) AS total_km,
+     [x IN nodes(p) | {
+       name:     x.name,
+       lat:      x.lat,
+       lon:      x.lon,
+       aqi:      coalesce(x.aqi, 0),
+       category: coalesce(x.aqi_category, 'N/A'),
+       hex:      coalesce(x.aqi_hex, '#FFFFFF'),
+       type:     CASE WHEN x:Warehouse THEN 'warehouse'
+                      WHEN x:Customer  THEN 'customer'
+                      ELSE 'neighborhood' END
+     }] AS waypoints
+RETURN waypoints, total_km, length(p) AS hops
 ORDER BY total_km ASC
 LIMIT 1;
 """
@@ -58,11 +81,11 @@ async def compute_route(
 ) -> dict:
     """
     Run the AQI-constrained shortest path query according to specification.
-    Returns route dict or a 'no_safe_route' sentinel if all paths are blocked.
+    Also computes a secondary alternative path for comparison if available.
     """
     try:
         async with neo4j_client.session() as session:
-            result = await session.run(SAFE_ROUTE_QUERY, customer_name=customer_name)
+            result = await session.run(PRIMARY_ROUTE_QUERY, customer_name=customer_name)
             record = await result.single()
 
         if record is None:
@@ -82,10 +105,26 @@ async def compute_route(
         hops = record["hops"]
         high_risk_zones = record.get("high_risk_zones", [])
 
+        # Fetch alternative path (if available)
+        alt_waypoints = []
+        alt_km = 0
+        alt_hops = 0
+        try:
+            primary_names = [w["name"] for w in waypoints]
+            async with neo4j_client.session() as session:
+                alt_res = await session.run(ALT_ROUTE_QUERY, customer_name=customer_name, primary_names=primary_names)
+                alt_rec = await alt_res.single()
+                if alt_rec:
+                    alt_waypoints = alt_rec["waypoints"]
+                    alt_km = round(alt_rec["total_km"], 2)
+                    alt_hops = alt_rec["hops"]
+        except Exception as e:
+            logger.debug("No distinct alternative path: %s", e)
+
         # Identify which neighborhoods are avoided (AQI > 400 across graph)
         avoided = await _get_severe_nodes(waypoints)
 
-        return {
+        res_dict = {
             "status": "ok",
             "waypoints": waypoints,
             "total_km": total_km,
@@ -93,6 +132,13 @@ async def compute_route(
             "avoided": avoided,
             "high_risk_zones": high_risk_zones,
         }
+
+        if alt_waypoints:
+            res_dict["alternative_waypoints"] = alt_waypoints
+            res_dict["alternative_total_km"] = alt_km
+            res_dict["alternative_hops"] = alt_hops
+
+        return res_dict
 
     except Exception as e:
         logger.error("Route query failed: %s", e)
