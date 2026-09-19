@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter
 from pydantic import BaseModel
-from services.aqi_ingestion import sync_aqi_from_cpcb, get_real_aqi, aqi_to_category
+from services.aqi_ingestion import sync_aqi_from_cpcb, get_cached_real_aqi as get_real_aqi, aqi_to_category
 from services.route_engine import compute_route, get_all_nodes
 from services.tavily_news import fetch_spike_context
 from websocket.manager import manager

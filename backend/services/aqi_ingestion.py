@@ -12,11 +12,11 @@ DATA_GOV_URL = (
 
 CYPHER_BULK_UPDATE = """
 UNWIND $updates AS u
-MATCH (n:Neighborhood {name: u.name})
-SET n.aqi       = u.aqi,
+MATCH (n:Neighborhood)
+WHERE n.station = u.station OR n.name = u.name
+SET n.aqi          = u.aqi,
     n.aqi_category = u.category,
-    n.aqi_hex   = u.hex,
-    n.station   = u.station,
+    n.aqi_hex      = u.hex,
     n.last_updated = datetime()
 RETURN count(n) AS updated
 """
@@ -101,6 +101,5 @@ async def sync_aqi_from_cpcb(api_key: str) -> int:
         return 0
 
 
-def get_real_aqi(neighborhood: str) -> dict | None:
-    """Return last-known real AQI data for a neighborhood (for reset-after-simulate)."""
-    return _real_aqi_cache.get(neighborhood)
+def get_cached_real_aqi(neighborhood_name: str) -> dict | None:
+    return _real_aqi_cache.get(neighborhood_name)

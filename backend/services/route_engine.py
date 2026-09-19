@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 SAFE_ROUTE_QUERY = """
 MATCH (warehouse:Warehouse), (customer:Customer {name: $customer_name})
-MATCH p = shortestPath((warehouse)-[:ROAD*]-(customer))
+MATCH p = shortestPath((warehouse)-[:ROAD*..15]-(customer))
 WHERE all(n IN nodes(p)
           WHERE n.aqi <= 400
              OR n:Warehouse
@@ -13,19 +13,22 @@ WHERE all(n IN nodes(p)
 WITH p,
      reduce(dist = 0, r IN relationships(p) | dist + r.distance) AS total_km,
      [x IN nodes(p) | {
-         name: x.name,
-         lat: x.lat,
-         lon: x.lon,
-         aqi: coalesce(x.aqi, 0),
-         category: coalesce(x.aqi_category, 'N/A'),
-         hex: coalesce(x.aqi_hex, '#FFFFFF'),
-         type: CASE WHEN x:Warehouse THEN 'warehouse'
-                    WHEN x:Customer  THEN 'customer'
-                    ELSE 'neighborhood' END
+       name:     x.name,
+       lat:      x.lat,
+       lon:      x.lon,
+       aqi:      coalesce(x.aqi, 0),
+       category: coalesce(x.aqi_category, 'N/A'),
+       hex:      coalesce(x.aqi_hex, '#FFFFFF'),
+       type:     CASE WHEN x:Warehouse THEN 'warehouse'
+                      WHEN x:Customer  THEN 'customer'
+                      ELSE 'neighborhood' END
      }] AS waypoints
-RETURN waypoints, total_km, length(p) AS hops
-ORDER BY total_km
-LIMIT 1
+RETURN waypoints,
+       total_km,
+       length(p) AS hops,
+       [x IN nodes(p) WHERE x:Neighborhood AND x.aqi > 300 | x.name] AS high_risk_zones
+ORDER BY total_km ASC
+LIMIT 1;
 """
 
 ALL_NODES_QUERY = """
@@ -54,7 +57,7 @@ async def compute_route(
     customer_name: str = "Connaught Place Delivery",
 ) -> dict:
     """
-    Run the AQI-constrained shortest path query.
+    Run the AQI-constrained shortest path query according to specification.
     Returns route dict or a 'no_safe_route' sentinel if all paths are blocked.
     """
     try:
@@ -71,13 +74,15 @@ async def compute_route(
                 "total_km": 0,
                 "hops": 0,
                 "avoided": [],
+                "high_risk_zones": [],
             }
 
         waypoints = record["waypoints"]
         total_km = round(record["total_km"], 2)
         hops = record["hops"]
+        high_risk_zones = record.get("high_risk_zones", [])
 
-        # Identify which neighborhoods are avoided (AQI > 400 but not on route)
+        # Identify which neighborhoods are avoided (AQI > 400 across graph)
         avoided = await _get_severe_nodes(waypoints)
 
         return {
@@ -86,6 +91,7 @@ async def compute_route(
             "total_km": total_km,
             "hops": hops,
             "avoided": avoided,
+            "high_risk_zones": high_risk_zones,
         }
 
     except Exception as e:
@@ -97,29 +103,47 @@ async def compute_route(
             "total_km": 0,
             "hops": 0,
             "avoided": [],
+            "high_risk_zones": [],
         }
 
 
-async def _get_severe_nodes(on_route: list[dict]) -> list[str]:
-    """Return list of severe AQI neighborhood names NOT on the current route."""
-    on_route_names = {w["name"] for w in on_route}
-    query = "MATCH (n:Neighborhood) WHERE n.aqi > 400 RETURN n.name AS name"
+async def _get_severe_nodes(waypoints: list) -> list[str]:
+    """Return names of Neighborhood nodes with AQI > 400."""
     try:
+        waypoint_names = {w["name"] for w in waypoints}
         async with neo4j_client.session() as session:
-            result = await session.run(query)
-            records = await result.data()
-        return [r["name"] for r in records if r["name"] not in on_route_names]
-    except Exception:
+            res = await session.run(
+                "MATCH (n:Neighborhood) WHERE n.aqi > 400 RETURN n.name AS name"
+            )
+            records = await res.data()
+            return [r["name"] for r in records if r["name"] not in waypoint_names]
+    except Exception as e:
+        logger.error("Failed to query severe nodes: %s", e)
         return []
 
 
 async def get_all_nodes() -> list[dict]:
-    async with neo4j_client.session() as session:
-        result = await session.run(ALL_NODES_QUERY)
-        return await result.data()
+    """Return all node details for live AQI station listings."""
+    try:
+        async with neo4j_client.session() as session:
+            res = await session.run(ALL_NODES_QUERY)
+            return await res.data()
+    except Exception as e:
+        logger.error("Failed to fetch nodes: %s", e)
+        return []
 
 
-async def get_all_edges() -> list[dict]:
-    async with neo4j_client.session() as session:
-        result = await session.run(ALL_EDGES_QUERY)
-        return await result.data()
+async def get_graph_data() -> dict:
+    """Return all nodes and edges for map rendering."""
+    try:
+        async with neo4j_client.session() as session:
+            n_res = await session.run(ALL_NODES_QUERY)
+            nodes = await n_res.data()
+
+            e_res = await session.run(ALL_EDGES_QUERY)
+            edges = await e_res.data()
+
+        return {"nodes": nodes, "edges": edges}
+    except Exception as e:
+        logger.error("Failed to fetch graph data: %s", e)
+        return {"nodes": [], "edges": []}
